@@ -1,4 +1,4 @@
-class MainService {
+class TaskServices {
   private app: HTMLDivElement;
   private createTaskButton: HTMLButtonElement;
 
@@ -50,35 +50,113 @@ class MainService {
         const task = document.getElementById(taskId as string)
 
         column.appendChild(task as HTMLElement)
+
+        let tasks: { id: string, state: string, content: string }[] = JSON.parse(localStorage.getItem("task") || "[]")
+        const taskIndex = tasks.findIndex(t => t.id === taskId)
+        tasks[taskIndex] = {
+          id: tasks[taskIndex].id,
+          state: column.id,
+          content: tasks[taskIndex].content
+        }
+
+
+        localStorage.setItem("task", JSON.stringify(tasks))
+
       })
     })
+
+    this.getTask()
 
   }
 
   async createTask() {
-    const task = document.createElement("div")
-    task.classList.add("bg-white")
-    task.classList.add("p-2")
-    task.classList.add("rounded-lg")
-    task.classList.add("border-red-200")
-    task.classList.add("border-2")
-    task.textContent = "Todo"
-    task.draggable = true
-    task.id = `task-${Date.now()}`
-    document.getElementById("not-started")?.appendChild(task)
 
-    task.addEventListener("dragstart", (e: DragEvent) => {
+    let tasks = JSON.parse(localStorage.getItem("task") || "[]")
+    const taskId = `task-${Date.now()}`
+    const taskState = "not-started"
+    const content = "Todo"
+
+    tasks.push({
+      id: taskId,
+      state: taskState,
+      content: content
+    })
+
+    localStorage.setItem("task", JSON.stringify(tasks))
+
+    const element = document.createElement("div")
+    const button = document.createElement("button")
+    element.classList.add("bg-white", "p-2", "rounded-lg", "border-red-200", "border-2")
+    element.textContent = content
+    element.draggable = true
+    element.id = taskId
+    button.textContent = "delete"
+    button.id = taskId
+    element.appendChild(button as HTMLButtonElement)
+
+    button.addEventListener("click", (e: Event) => {
+      e.stopPropagation()
+
+      this.deleteTask(button.id)
+    })
+
+    element.addEventListener("dragstart", (e: DragEvent) => {
       const target = e.target as HTMLElement
       e.dataTransfer?.setData("text", target.id)
       target.classList.add("dragging")
     })
 
-    task.addEventListener("dragend", (e: DragEvent) => {
+    element.addEventListener("dragend", (e: DragEvent) => {
       const target = e.target as HTMLElement
       target.classList.remove("dragging")
 
     })
+    document.querySelector("#not-started")?.appendChild(element)
+  }
+
+  async deleteTask(id: string) {
+    let tasks: { id: string, state: string, content: string }[] = JSON.parse(localStorage.getItem("task") || "[]")
+    const taskIndex = tasks.findIndex(t => t.id === id)
+    tasks.splice(taskIndex, 1)
+    localStorage.setItem("task", JSON.stringify(tasks))
+    document.querySelector(`#${id}`)?.remove()
+  }
+
+  async getTask() {
+    const tasks: { id: string, state: string, content: string }[] = JSON.parse(localStorage.getItem("task") || "[]")
+    tasks.forEach(task => {
+      const element = document.createElement("div")
+      const button = document.createElement("button")
+      element.classList.add("bg-white", "p-2", "rounded-lg", "border-red-200", "border-2")
+      element.textContent = task.content
+      element.draggable = true
+      element.id = task.id
+      button.textContent = "delete"
+      button.id = task.id
+      button.addEventListener("click", (e: Event) => {
+        e.stopPropagation()
+
+        this.deleteTask(button.id)
+      })
+
+      element.appendChild(button as HTMLButtonElement)
+
+      element.addEventListener("dragstart", (e: DragEvent) => {
+        const target = e.target as HTMLElement
+        e.dataTransfer?.setData("text", target.id)
+        target.classList.add("dragging")
+      })
+
+      element.addEventListener("dragend", (e: DragEvent) => {
+        const target = e.target as HTMLElement
+        target.classList.remove("dragging")
+
+      })
+
+      document.querySelector(`#${task.state}`)?.appendChild(element)
+    })
+
   }
 }
 
-new MainService()
+new TaskServices()
